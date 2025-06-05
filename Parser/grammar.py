@@ -5,7 +5,7 @@ class Grammar:
   def __init__(self, lexer):
       self.lexer = lexer
 
-
+# prog := 
   def p_prog1(self, p):
       '''prog : empty'''
       p[0] = ProgramNode(function=EmptyNode(self.lexer.lineno), prog= None, lineno= self.lexer.lineno)
@@ -17,6 +17,8 @@ class Grammar:
       p[0] = ProgramNode(function=p[1], prog= p[2], lineno= self.lexer.lineno)
       return p[0]
   
+# func :=   
+
   def p_func_with_body(self, p):
        '''func : FUNK iden LPAREN flist RPAREN type LBRACE body RBRACE'''
        p[0] = FunctionNode(type=p[6], iden=p[2], flist=p[4], func_choice=p[7], lineno=self.lexer.lineo)
@@ -34,7 +36,8 @@ class Grammar:
     p[0] = ExpressionStatementNode(expr=p[1], linen=self.lexer.lineno)
     return p[0]
 
-
+# stmt :=    
+  # defvar :=      
   def p_stmt_defvar(self, p):
     '''stmt : defvar SEMI'''
     
@@ -69,22 +72,36 @@ class Grammar:
     return p[0]
 
 
-def p_stmt_do_while(self, p):
-    '''stmt : DO stmt WHILE LPAREN expr RPAREN'''
-    p[0] = DoWhileStatementNode(stmt=p[2], condition=p[5],lineno=self.lexer.lineno)
-    return p[0]
+  def p_stmt_do_while(self, p):
+        '''stmt : DO stmt WHILE LPAREN expr RPAREN'''
+        p[0] = DoWhileStatementNode(stmt=p[2], condition=p[5],lineno=self.lexer.lineno)
+        return p[0]
 
-def p_stmt_for(self, p):
-    '''stmt : FOR LPAREN iden EQUAL expr TO expr RPAREN stmt'''
-    p[0] = ForStatementNode(iden=p[3], expr1=p[5], expr2=p[7], stmt=p[9], lineno=self.lexer.lineno)
-    return p[0]
+  def p_stmt_for(self, p):
+        '''stmt : FOR LPAREN iden EQUAL expr TO expr RPAREN stmt'''
+        p[0] = ForStatementNode(iden=p[3], expr1=p[5], expr2=p[7], stmt=p[9], lineno=self.lexer.lineno)
+        return p[0]
 
-def p_stmt_begin_end(self, p):
-    '''stmt : BEGIN body END'''
-    p[0] = BodyNode(body=p[2], lineno=self.lexer.lineno)
-    return p[0]
+  def p_stmt_begin_end(self, p):
+        '''stmt : BEGIN body END'''
+        p[0] = BodyNode(body=p[2], lineno=self.lexer.lineno)
+        return p[0]
 
-def p_stmt_return(self, p):
-    '''stmt : RETURN expr SEMI'''
-    p[0] = ReturnStatementNode(expr=p[2], lineno=self.lexer.lineno)
-    return p[0]
+  def p_stmt_return(self, p):
+        '''stmt : RETURN expr SEMI'''
+        p[0] = ReturnStatementNode(expr=p[2], lineno=self.lexer.lineno)
+        return p[0]
+
+
+# flist := 
+
+  def p_flist(self, p):
+        '''flist : iden AS type
+                | iden AS type COMMA flist'''
+        if len(p) == 4:
+            # flist : iden AS type
+            p[0] = FlistNode(p[1], p[3], lineno=self.lexer.lineno)
+        elif len(p) == 6: 
+            # iden AS type COMMA flist
+            p[0] = FlistNode(p[1], p[3], p[5], lineno=self.lexer.lineno)
+        return p[0]

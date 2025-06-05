@@ -73,6 +73,26 @@ class FunctionBodyNode(Node):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(stmt={self.stmt.__repr__()}, body={self.body.__repr__()}, lineno={self.lineno})"
+    
+class BodyNode(Node):
+    def __init__(self, body, lineno):
+        self.lineno = lineno 
+        self.body = body  
+        self.children = (body,)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(body={self.body.__repr__()}, lineno={self.lineno})"
+
+class FlistNode(Node):
+    def __init__(self, iden, type, next_param=None, lineno=None):
+        self.iden = iden          
+        self.type = type         
+        self.next_param = next_param 
+        self.lineno = lineno     
+        self.children = (iden, type, next_param) if next_param else (iden, type)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(iden={self.iden}, type={self.type}, next_param={self.next_param}, lineno={self.lineno})"
 
 
 class ExpressionStatementNode(Node):
@@ -119,6 +139,15 @@ class WhileStatementNode(Node):
     def __repr__(self):
         return f"{self.__class__.__name__}(expr={self.expr.__repr__()}, stmt={self.stmt.__repr__()})"
 
+class DoWhileStatementNode(Node):
+    def __init__(self, stmt, condition, lineno):
+        self.stmt = stmt    
+        self.condition = condition
+        self.lineno = lineno  
+        self.children = (stmt, condition)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(stmt={self.stmt.__repr__()}, condition={self.condition.__repr__()}, lineno={self.lineno})"
 
 class ForStatementNode(Node):
     def __init__(self, iden, expr1, expr2, stmt, lineno):
