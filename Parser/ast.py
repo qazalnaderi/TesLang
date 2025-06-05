@@ -44,15 +44,6 @@ class FunctionNode(Node):
         return f"{self.__class__.__name__}(type={self.type.__repr__()}, iden={self.iden.__repr__()}, flist={self.flist.__repr__()}, func_choice={self.func_choice.__repr__()}, lineno={self.lineno})"
 
 
-class FunctionWithBodyNode(Node):
-    def __init__(self, body, lineno):
-        self.lineno = lineno
-        self.body = body
-        self.children = (body,)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}(body={self.body.__repr__()}, lineno={self.lineno})"
-
 
 class FunctionWithReturnNode(Node):
     def __init__(self, expr, lineno):
@@ -73,36 +64,41 @@ class FunctionBodyNode(Node):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(stmt={self.stmt.__repr__()}, body={self.body.__repr__()}, lineno={self.lineno})"
-    
+
+
 class BodyNode(Node):
     def __init__(self, body, lineno):
-        self.lineno = lineno 
-        self.body = body  
+        self.lineno = lineno
+        self.body = body
         self.children = (body,)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(body={self.body.__repr__()}, lineno={self.lineno})"
 
+
 class FlistNode(Node):
     def __init__(self, iden, type, next_param=None, lineno=None):
-        self.iden = iden          
-        self.type = type         
-        self.next_param = next_param 
-        self.lineno = lineno     
-        self.children = (iden, type, next_param) if next_param else (iden, type)
+        self.iden = iden
+        self.type = type
+        self.next_param = next_param
+        self.lineno = lineno
+        self.children = (
+            iden, type, next_param) if next_param else (iden, type)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(iden={self.iden}, type={self.type}, next_param={self.next_param}, lineno={self.lineno})"
 
+
 class ClistNode(Node):
     def __init__(self, expr, next_expr=None, lineno=None):
-        self.expr = expr            
-        self.next_expr = next_expr   
-        self.lineno = lineno       
+        self.expr = expr
+        self.next_expr = next_expr
+        self.lineno = lineno
         self.children = (expr, next_expr) if next_expr else (expr,)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(expr={self.expr}, next_expr={self.next_expr}, lineno={self.lineno})"
+
 
 class ExpressionStatementNode(Node):
     def __init__(self, expr, lineno):
@@ -148,15 +144,17 @@ class WhileStatementNode(Node):
     def __repr__(self):
         return f"{self.__class__.__name__}(expr={self.expr.__repr__()}, stmt={self.stmt.__repr__()})"
 
+
 class DoWhileStatementNode(Node):
     def __init__(self, stmt, condition, lineno):
-        self.stmt = stmt    
+        self.stmt = stmt
         self.condition = condition
-        self.lineno = lineno  
+        self.lineno = lineno
         self.children = (stmt, condition)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(stmt={self.stmt.__repr__()}, condition={self.condition.__repr__()}, lineno={self.lineno})"
+
 
 class ForStatementNode(Node):
     def __init__(self, iden, expr1, expr2, stmt, lineno):
@@ -265,6 +263,16 @@ class FunctionCallNode(Node):
         return f"FunctionCallNode(iden={self.iden.__repr__()}, clist={self.clist.__repr__()})"
 
 
+class TypeNode(Node):
+    def __init__(self, type_value, lineno):
+        self.type_value = type_value
+        self.lineno = lineno
+        self.children = (type_value,)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(type_value={self.type_value}, lineno={self.lineno})"
+
+
 class EmptyNode(Node):
     def __init__(self, lineno):
         self.lineno = lineno
@@ -273,3 +281,38 @@ class EmptyNode(Node):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(lineno={self.lineno})"
+
+
+class ArrayIndexingNode(Node):
+    def __init__(self, array_expr, index_expr, lineno):
+        self.array_expr = array_expr
+        self.index_expr = index_expr
+        self.lineno = lineno
+        self.children = (array_expr, index_expr)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(array_expr={self.array_expr}, index_expr={self.index_expr}, lineno={self.lineno})"
+
+
+class ComparisonOperationNode(Node):
+    def __init__(self, expr1, expr2, operator, lineno):
+        self.expr1 = expr1
+        self.expr2 = expr2
+        self.operator = operator
+        self.lineno = lineno
+        self.children = (expr1, expr2)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(expr1={self.expr1}, expr2={self.expr2}, operator={self.operator}, lineno={self.lineno})"
+
+
+class TernaryOperationNode(Node):
+    def __init__(self, condition, true_expr, false_expr, lineno):
+        self.condition = condition
+        self.true_expr = true_expr
+        self.false_expr = false_expr
+        self.lineno = lineno
+        self.children = (condition, true_expr, false_expr)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(condition={self.condition}, true_expr={self.true_expr}, false_expr={self.false_expr}, lineno={self.lineno})"
