@@ -220,10 +220,11 @@ class ExpressionListNode(Node):
 
 
 class BinaryOperationNode(Node):
-    def __init__(self, expr1, expr2, lineno):
+    def __init__(self, expr1, expr2,operator, lineno):
         self.lineno = lineno
         self.expr1 = expr1
         self.expr2 = expr2
+        self.operator = operator
         self.children = (expr1, expr2)
 
     def __repr__(self):
@@ -316,3 +317,85 @@ class TernaryOperationNode(Node):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(condition={self.condition}, true_expr={self.true_expr}, false_expr={self.false_expr}, lineno={self.lineno})"
+
+
+class ParenthesisNode(Node):
+    def __init__(self, expr, lineno):
+        self.expr = expr
+        self.lineno = lineno
+        self.children = (expr,)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(expr={self.expr.__repr__()}, lineno={self.lineno})"
+
+class BooleanNode:
+    def __init__(self, value, lineno):
+        self.value = value  # True یا False
+        self.lineno = lineno  # شماره خطی که در آن قرار دارد
+
+    def __repr__(self):
+        return f"BooleanNode(value={self.value}, lineno={self.lineno})"
+
+class NullNode:
+    def __init__(self, lineno):
+        self.value = None  # مقدار null به صورت None ذخیره می‌شود
+        self.lineno = lineno  # شماره خطی که در آن قرار دارد
+
+    def __repr__(self):
+        return f"NullNode(value={self.value}, lineno={self.lineno})"
+class CastNode:
+    def __init__(self, iden, expr, lineno):
+        self.iden = iden  # نوع داده (مثلاً 'INT')
+        self.expr = expr  # عبارت برای تبدیل
+        self.lineno = lineno  # شماره خط (برای دیباگ یا پیام‌های خطا)
+
+    def __repr__(self):
+        return f"CastNode(iden={self.iden}, expr={self.expr}, lineno={self.lineno})"
+class UnaryOperationNode:
+    def __init__(self, operator, expr, lineno):
+        self.operator = operator  # عملگر (مثلاً '!')
+        self.expr = expr  # عبارت برای اعمال عملگر
+        self.lineno = lineno  # شماره خط
+
+    def __repr__(self):
+        return f"UnaryOperationNode(operator={self.operator}, expr={self.expr}, lineno={self.lineno})"
+class PrintStatementNode:
+    def __init__(self, expr, lineno):
+        self.expr = expr  # عبارت برای پرینت کردن
+        self.lineno = lineno  # شماره خط
+
+    def __repr__(self):
+        return f"PrintStatementNode(expr={self.expr}, lineno={self.lineno})"
+
+
+class ArrayAssignmentNode:
+    def __init__(self, array_expr, index_expr, value_expr, lineno):
+        self.array_expr = array_expr  # آرایه
+        self.index_expr = index_expr  # شاخص
+        self.value_expr = value_expr  # مقدار جدید
+        self.lineno = lineno  # شماره خط
+        self.type = None  # نوع داده که به آرایه اختصاص داده می‌شود
+
+    def __repr__(self):
+        return f"ArrayAssignmentNode(array_expr={self.array_expr}, index_expr={self.index_expr}, value_expr={self.value_expr}, lineno={self.lineno})"
+
+class VariableAssignmentNode:
+    def __init__(self, iden, value_expr, lineno):
+        self.iden = iden  # نام متغیر
+        self.value_expr = value_expr  # مقدار جدید
+        self.lineno = lineno  # شماره خط
+        self.type = None  # نوع داده که به متغیر اختصاص داده می‌شود
+
+    def __repr__(self):
+        return f"VariableAssignmentNode(iden={self.iden}, value_expr={self.value_expr}, lineno={self.lineno})"
+
+
+class AssignmentNode:
+    def __init__(self, left, right, lineno):
+        self.left = left  # بخش چپ (مقداردهی به متغیر یا آرایه)
+        self.right = right  # بخش راست (مقدار اختصاص داده شده)
+        self.lineno = lineno  # شماره خط
+        self.type = None  # نوع داده که به متغیر یا آرایه اختصاص داده می‌شود
+
+    def __repr__(self):
+        return f"AssignmentNode(left={self.left}, right={self.right}, lineno={self.lineno})"
