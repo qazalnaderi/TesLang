@@ -96,8 +96,7 @@ class Grammar:
 # flist := 
 
   def p_flist(self, p):
-        '''flist : iden AS type
-                | iden AS type COMMA flist'''
+        '''flist : iden AS type | iden AS type COMMA flist'''
         if len(p) == 4:
             # flist : iden AS type
             p[0] = FlistNode(p[1], p[3], lineno=self.lexer.lineno)
@@ -105,3 +104,16 @@ class Grammar:
             # iden AS type COMMA flist
             p[0] = FlistNode(p[1], p[3], p[5], lineno=self.lexer.lineno)
         return p[0]
+
+
+# clist := 
+def p_clist(self, p):
+    '''clist : expr | expr COMMA clist'''
+    
+    if len(p) == 2: 
+        # clist : expr
+        p[0] = ClistNode(expr=p[1], lineno=self.lexer.lineno)
+    elif len(p) == 4:
+        # expr COMMA clist
+        p[0] = ClistNode(expr=p[1], next_expr=p[3], lineno=self.lexer.lineno)
+    return p[0]

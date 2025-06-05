@@ -94,6 +94,15 @@ class FlistNode(Node):
     def __repr__(self):
         return f"{self.__class__.__name__}(iden={self.iden}, type={self.type}, next_param={self.next_param}, lineno={self.lineno})"
 
+class ClistNode(Node):
+    def __init__(self, expr, next_expr=None, lineno=None):
+        self.expr = expr            
+        self.next_expr = next_expr   
+        self.lineno = lineno       
+        self.children = (expr, next_expr) if next_expr else (expr,)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(expr={self.expr}, next_expr={self.next_expr}, lineno={self.lineno})"
 
 class ExpressionStatementNode(Node):
     def __init__(self, expr, lineno):
