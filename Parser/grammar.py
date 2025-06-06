@@ -38,13 +38,12 @@ class Grammar:
         '''func_list : func
                      | func func_list
                      | '''
-        if len(p) == 2:
-            p[0] = [p[1]] if p[1] else []
-        elif len(p) == 3:
-            p[0] = [p[1]] + p[2] if p[1] else p[2]
-        else:
+        if len(p) == 1:
             p[0] = []
-        return p[0]
+        elif len(p) == 2:
+            p[0] = [p[1]] if p[1] else []
+        else:
+            p[0] = [p[1]] + p[2]
 
     # func :=
     def p_func_with_body(self, p):
@@ -53,17 +52,12 @@ class Grammar:
         self.current_function = p[2]
         param_list = []
         current = p[4]
-        while current and hasattr(current, 'iden'):
-            if current.iden is None or current.type is None:
-                print(f"Error: Invalid parameter at line {self.lexer.lineno}")
-                break
+        while current and hasattr(current, 'iden') and current.iden:
             param_list.append((current.iden, current.type.type_value))
             current = current.next_param if hasattr(current, 'next_param') else None
-        # self.defined_functions[p[2]] = {'return_type': p[7].type_value, 'params': param_list}
         p[0] = FunctionNode(type=p[7], iden=p[2], flist=p[4], func_choice=p[10], lineno=self.lexer.lineno)
         self.current_function = None
         self.brace_count -= 1
-        return p[0]
 
     def p_func_without_body(self, p):
         '''func : FUNK ID LPAREN flist RPAREN LESS_THAN type GREATER_THAN RETURN_ARROW expr SEMI_COLON'''
@@ -127,17 +121,11 @@ class Grammar:
         #     print(f"Error: Invalid assignment target at line {self.lexer.lineno}.")
         p[0] = AssignmentNode(left=p[1], right=p[3], lineno=self.lexer.lineno)
         return p[0]
+    
+    
     def p_stmt_defvar(self, p):
         '''stmt : defvar SEMI_COLON'''
-        # تعریف متغیر و بررسی نوع
-        p[0] = VariableDefinitionNode(type=None, iden=None, defvar_choice=p[1], lineno=self.lexer.lineno)
-        # if p[1].iden in self.defined_variables:
-        #     print(f"Error: Variable '{p[1].iden}' is already defined at line {self.lexer.lineno}.")
-        # else:
-        #     self.defined_variables[p[1].iden] = {
-        #         'type': p[1].type.type_value,
-        #         'initialized': False
-        #     }
+        p[0] =p[1]
         return p[0]
 
     def p_defvar(self, p):
@@ -145,13 +133,9 @@ class Grammar:
                 | ID COLON_COLON type EQUAL expr'''
         
         if len(p) == 4:
-            p[0] = VariableDefinitionNode(iden=p[1], type=p[3],defvar_choice=None, lineno=self.lexer.lineno)
-        # else:
-        #     if p[3].type_value != p[5].type:
-        #         print(f"Error: Type mismatch in variable definition. Expected '{p[3].type_value}', got '{p[5].type}' at line {self.lexer.lineno}.")
-        #     p[0] = VariableDefinitionNode(iden=p[1], type=p[3], expr=p[5],defvar_choice=None, lineno=self.lexer.lineno)
-        # if p[3].type_value == 'FLOAT':
-        #     print(f"Error: Invalid type 'FLOAT' found. Types must be one of 'INT', 'STR', 'MSTR', 'VECTOR', 'BOOL', 'NULL' at line {self.lexer.lineno}.")
+            p[0] = VariableDefinitionNode(iden=p[1], type=p[3], defvar_choice=None, lineno=self.lexer.lineno)
+        else:
+            p[0] = VariableDefinitionNode(iden=p[1], type=p[3], defvar_choice=p[5], lineno=self.lexer.lineno)
         return p[0]
 
 
@@ -231,7 +215,7 @@ class Grammar:
             p[0] = FlistNode(iden=p[1], type=p[3], next_param=p[5], lineno=self.lexer.lineno)
         
         else:
-            p[0] = FlistNode(iden=None, type=None, next_param=None, lineno=self.lexer.lineno)
+            p[0] = None
         
         return p[0]
 
@@ -337,12 +321,12 @@ class Grammar:
             # if p[3].type != 'INT':
                 # print(f"Error: 'list' function expects int size, got {p[3].type} at line {self.lexer.lineno}.")
             p[0] = FunctionCallNode(iden='list', clist=ClistNode(expr=[p[3]], lineno=self.lexer.lineno), lineno=self.lexer.lineno)
-            p[0].type = 'VECTOR'
+            # p[0].type = 'VECTOR'
         elif p[1] == 'length':
             # if p[3].type not in ['STR', 'VECTOR']:
             #     print(f"Error: 'length' function expects str or vector, got {p[3].type} at line {self.lexer.lineno}.")
             p[0] = FunctionCallNode(iden='length', clist=ClistNode(expr=[p[3]], lineno=self.lexer.lineno), lineno=self.lexer.lineno)
-            p[0].type = 'INT'
+            # p[0].type = 'INT'
         else:
             p[0] = self._handle_func_call(p[1], ClistNode(expr=[p[3]], lineno=self.lexer.lineno), p[4])
         return p[0]
