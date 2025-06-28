@@ -215,7 +215,6 @@ class SemanticAnalyzer(ASTNodeVisitor):
     def visit_NullNode(self, node, table):
         pass
 
-    # ---- helper ----
     def _check_undefined_ids(self, expr, table, lineno):
         from ply.lex import LexToken
         import Parser.ast as ast
