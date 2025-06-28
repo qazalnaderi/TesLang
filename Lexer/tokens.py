@@ -32,10 +32,15 @@ tokens = (
     'OR', 'AND', 'NOT', 'RETURN_ARROW', 'RETURN',    'LSQBR',  # لیست باز
     'COLON_COLON',  # دو نقطه
     'QUESTION',  # علامت سوال
-    'EQUAL', 'RDBLBR',
-    'QMARK', 'COLON', 'AS', 'INT', 'VECTOR', 'STR', 'MSTR', 'BOOL', 'NULL', 'TRUE', 'FALSE', 'FUNK', 'IF', 'ELSE', 'WHILE', 'DO', 'FOR', 'TO', 'BEGIN', 'END', 'LEN', 'PRINT'
+    'EQUAL', 'RDBLBR','LBRACE','RBRACE',
+    'QMARK', 'COLON', 'AS', 'INT', 'VECTOR', 'STR', 'MSTR', 'BOOL', 'NULL',
+    'TRUE', 'FALSE', 'FUNK', 'IF', 'ELSE', 'WHILE', 'DO', 'FOR', 'TO', 'BEGIN', 'END', 'LEN', 'PRINT'
 )
 
+def t_VECTOR(t):
+    r'vector'
+    t.value = 'vector'
+    return t
 
 def remove_comments(input_text):
     protected_strings = []
@@ -104,8 +109,8 @@ t_LSQUAREBR = r'\['
 t_RSQUAREBR = r'\]'
 t_LDBLBR = r'\[\['
 t_RDBLBR = r'\]\]'
-t_LCURLYEBR = r'\{'
-t_RCURLYEBR = r'\}'
+# t_LCURLYEBR = r'\{'
+# t_RCURLYEBR = r'\}'
 t_SEMI_COLON = r';'
 t_EQUAL = r'='
 t_COLON_COLON = r'::'
@@ -113,7 +118,8 @@ t_COLON = r':'
 t_QUESTION = r'\?'
 t_COMMA = r','
 t_RETURN_ARROW = r'=>'
-
+t_LBRACE = r'\{'  # Changed from LCURLYEBR
+t_RBRACE = r'\}'
 t_EQEQ = r'=='
 t_NEQ = r'!='
 t_LTEQ = r'<='
@@ -123,8 +129,10 @@ t_GREATER_THAN = r'>'
 t_AND = r'\&\&'
 t_OR = r'\|\|'
 t_NOT = r'!'
-
-
+t_RETURN = r'return'
+t_TO = r'to'
+t_BEGIN = r'begin'
+t_END = r'end'
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
