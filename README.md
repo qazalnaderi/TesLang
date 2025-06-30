@@ -34,7 +34,7 @@ The final output runs on the [tsvm virtual machine](https://github.com/aligrudi/
 4. Run on tsvm:
 
 ```bash
-tsvm output.ts
+python main.py
 ```
 #📂 Project Structure
 Lexer/ → token definitions
