@@ -25,6 +25,8 @@ class Grammar:
         self.paren_count = 0
         self.brace_count = 0
         self.current_function = None 
+        self.has_syntax_error = False
+        
 
 
 
@@ -35,7 +37,7 @@ class Grammar:
         return p[0]
     def p_empty(self, p):
         'empty :'
-        pass
+        p[0] = None
 
 
     def p_func_list(self, p):
@@ -172,9 +174,12 @@ class Grammar:
         return p[0]
 
     def p_stmt_return(self, p):
-        '''stmt : RETURN expr SEMI_COLON'''
-        p[0] = ReturnStatementNode(expr=p[2], lineno=self.lexer.lineno)
-        return p[0]
+        '''stmt : RETURN expr SEMI_COLON
+        | RETURN SEMI_COLON'''
+        if len(p) == 4:
+            p[0] = ReturnStatementNode(expr=p[2], lineno=self.lexer.lineno)
+        else:
+            p[0] = ReturnStatementNode(expr=None, lineno=self.lexer.lineno)
 
 
     # flist :=
@@ -201,9 +206,12 @@ class Grammar:
                  | expr
                  | expr COMMA clist'''
         if len(p) == 1:           # Empty rule
-            p[0] = None
-        if len(p) == 2:
-            p[0] = ClistNode(expr=[p[1]], lineno=self.lexer.lineno)
+            p[0] = ClistNode(expr=[], lineno=self.lexer.lineno)
+        elif len(p) == 2:
+            if p[1] is None:
+                p[0] = ClistNode(expr=[], lineno=self.lexer.lineno)
+            else:
+                p[0] = ClistNode(expr=[p[1]], lineno=self.lexer.lineno)
         else:
             p[0] = ClistNode(expr=[p[1]] + p[3].expr, lineno=self.lexer.lineno)
         return p[0]
@@ -238,34 +246,22 @@ class Grammar:
         p[0].type = p[3].type
         return p[0]
 
-    def p_expr_binary(self, p):
+    def p_expr_binary_math(self, p):
         '''expr : expr PLUS expr
                 | expr MINUS expr
                 | expr MULTIPLY expr
-                | expr DIVIDE expr
-                | expr GREATER_THAN expr
+                | expr DIVIDE expr'''
+        p[0] = BinaryOperationNode(expr1=p[1], expr2=p[3], operator=p[2], lineno=self.lexer.lineno)
+
+    def p_expr_comparison(self, p):
+        '''expr : expr GREATER_THAN expr
                 | expr LESS_THAN expr
                 | expr EQEQ expr
                 | expr GTEQ expr
                 | expr LTEQ expr
-                | expr NEQ expr
-                | expr OR expr
-                | expr AND expr'''
-        op = {
-        '+': '+', '-': '-', '*': '*', '/': '/',
-        '>': '>', '<': '<', '==': '==', 
-        '>=': '>=', '<=': '<=', '!=': '!=', '||': '||', '&&': '&&'
-    }
-        
-        operator = op.get(p[2])
-          
-        if not operator:
-            print(f"Error: Unknown operator {p[2]} at line {self.lexer.lineno}.")
-            return None
+                | expr NEQ expr'''
+        p[0] = ComparisonOperationNode(expr1=p[1], expr2=p[3], operator=p[2], lineno=self.lexer.lineno)
 
-        p[0] = ComparisonOperationNode(expr1=p[1], expr2=p[3], operator=operator, lineno=self.lexer.lineno)
-
-        return p[0]
 
     def p_expr_not(self, p):
         '''expr : NOT expr'''
@@ -337,14 +333,20 @@ class Grammar:
         p[0] = ParenthesisNode(expr=p[2], lineno=self.lexer.lineno)
         self.paren_count -= 1
         return p[0]
+    
 
     def p_error(self, p):
+        self.has_syntax_error = True
+        print("❌ Syntax Errors:")
         if self.paren_count > 0:
             print(f"Error: Unmatched opening parentheses at line {self.lexer.lineno}.")
         if self.brace_count > 0:
             print(f"Error: Unmatched curly braces at line {self.lexer.lineno}.")
         if p:
-            print(f"Syntax error at token: '{p.value}' at line {self.lexer.lineno}")
+            if p.type in tokens:
+                print(f"Maybe you forgot to put ; before '{p.value}' at line {self.lexer.lineno}")
+            else:    
+                print(f"Syntax error at token: '{p.value}' at line {self.lexer.lineno}")
         else:
             print(f"Syntax error at EOF")
 

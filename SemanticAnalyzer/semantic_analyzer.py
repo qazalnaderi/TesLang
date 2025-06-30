@@ -8,6 +8,7 @@ class SemanticError:
         self.message = message
         self.lineno = lineno
         self.function_name = function_name
+
         
     def __str__(self):
         if self.function_name:
@@ -37,12 +38,10 @@ class SemanticAnalyzer(Visitor):
         self.current_function = None
         self.errors = []
         self.valid_types = {'int', 'vector', 'str', 'string', 'mstr', 'bool', 'null'}
-        
-        # Add built-in functions
+        self.has_sem_error = False
         self._add_builtin_functions()
     
 
-    #TODO add other funcs
     def _add_builtin_functions(self):
         """Add built-in functions to global scope"""
         # list(size) -> vector
@@ -102,6 +101,7 @@ class SemanticAnalyzer(Visitor):
     def add_error(self, message: str, lineno: int = None):
         """Add a semantic error (avoiding duplicates)"""
         error = SemanticError(message, lineno, self.current_function)
+        self.has_sem_error = True
         # Check for duplicates more thoroughly
         for existing_error in self.errors:
             if (existing_error.message == error.message and 
@@ -579,7 +579,9 @@ class SemanticAnalyzer(Visitor):
         return self.errors
     
     def print_errors(self):
-        """Print all semantic errors"""
+        print("❌ Semantic Errors:")
         for error in self.errors:
             print(error)
+
+
 

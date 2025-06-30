@@ -32,7 +32,7 @@ def run_tsvm(ts_file_path, input_values=""):
         ["./tsvm.exe", ts_file_path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE  # این خط خیلی مهمه
+        stdin=subprocess.PIPE
     )
 
     stdout, stderr = process.communicate(input=input_values.encode())
@@ -40,8 +40,8 @@ def run_tsvm(ts_file_path, input_values=""):
     print("stdout:")
     print(stdout.decode())
 
-    print("stderr:")
-    print(stderr.decode())
+    # print("❌ stderr:")
+    # print(stderr.decode())
 
 
 def main():
@@ -55,10 +55,15 @@ def main():
 
     ast_root = parser.build(input_text)
     # print('Parser ast_root:', ast_root)
+    if not grammar.has_syntax_error and ast_root:
+        print("✅ Parsing successful with no syntax errors.")
 
     analyzer = SemanticAnalyzer()
-    errors = analyzer.analyze(ast_root)
-    analyzer.print_errors()
+    analyzer.analyze(ast_root)
+    if not analyzer.has_sem_error:
+        print("✅ Semantic Analysis successful with no errors.")
+    else:
+        analyzer.print_errors()
     
     codegen = CodeGenerator()
 
