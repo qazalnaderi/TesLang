@@ -3,13 +3,8 @@ from Parser.ast import *
 from Parser.grammar import Grammar
 from Lexer.tokens import tokenize
 from tabulate import tabulate
-from Semantic_Analysis.symtab import SymbolTable 
-from Semantic_Analysis.type_check import TypeChecker
-from Semantic_Analysis.analyzer import SemanticAnalyzer
-from IR_Generation.IR_generator import IRGenerator  
-from IR_Generation.IR_optimizer import IROptimizer
-import subprocess
-
+from SemanticAnalyzer.semantic_analyzer import SemanticAnalyzer
+from IR.generator import CodeGenerator
 
 def process_input(filename):
     with open(filename, 'r') as file:
@@ -24,43 +19,33 @@ def print_tokens(tokens_list):
     headers = ["Line", "Column", "Token", "Value"]
     print(tabulate(table_data, headers=headers, tablefmt="fancy_grid"))
 
-class SemanticMessages:
-    def __init__(self):
-        self.messages = []
-    
-        self.reported_set = set()  # برای جلوگیری از تکرار
-
-    def add_message(self, message):
-        # فرض بر این است که message یک dict با کلیدهای "message" و "lineno" است
-        key = (message.get("message", ""))
-        if key not in self.reported_set:
-            self.messages.append(message)
-            self.reported_set.add(key)
-
-    
-    def get_messages(self):
-        return self.messages
-
 
 def print_symbol_table(table, indent=0):
     print("  " * indent + f"SymbolTable(name='{table.name}', symbols={table.symbols})")
     for child in table.children:
         print_symbol_table(child, indent + 1)
 
+import subprocess
 
-# def run_tsvm(ts_file_path):
-#     process = subprocess.Popen(["./tsvm.exe", ts_file_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#     stdout, stderr = process.communicate()
+def run_tsvm(ts_file_path, input_values=""):
+    process = subprocess.Popen(
+        ["./tsvm.exe", ts_file_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE  # این خط خیلی مهمه
+    )
 
-#     print("stdout:")
-#     print(stdout.decode())
-#     print("stderr:")
-#     print(stderr.decode())
+    stdout, stderr = process.communicate(input=input_values.encode())
 
-# run_tsvm("output.ts")
+    print("stdout:")
+    print(stdout.decode())
+
+    print("stderr:")
+    print(stderr.decode())
+
 
 def main():
-    input_text = process_input("./tests/test_input.tes")
+    input_text = process_input("./tests/test_input2.tes")
 
     tokens_list = tokenize(input_text)
     print_tokens(tokens_list)
@@ -68,48 +53,25 @@ def main():
     grammar = Grammar()
     parser = Parser(grammar)
 
-    # Generate AST from input text
     ast_root = parser.build(input_text)
-    print('Parser ast_root:', ast_root)
+    # print('Parser ast_root:', ast_root)
 
-    # Perform semantic analysis
-    semantic_messages = SemanticMessages()
-    symbol_table = SymbolTable(None, "global_scope")
-    semantic_analyzer = SemanticAnalyzer(symbol_table, semantic_messages)
-    semantic_analyzer.visit(ast_root, symbol_table)
-    print("Symbol Tables:")
-    print_symbol_table(symbol_table)
+    analyzer = SemanticAnalyzer()
+    errors = analyzer.analyze(ast_root)
+    analyzer.print_errors()
     
-    type_checker = TypeChecker(semantic_messages)
-    type_checker.visit(ast_root, symbol_table)
+    codegen = CodeGenerator()
 
-    # Print semantic errors or warnings
-    messages = semantic_messages.get_messages()
-    if messages:
-        print("Semantic Errors/Warnings:")
-        for msg in sorted(messages, key=lambda x: x["lineno"]):
-            print(f"Line {msg['lineno']}: {msg['message']}")
-    else:
-        print("Semantic analysis completed successfully with no errors.")
+    code_lines = codegen.generate_code(ast_root)
+    code_str = codegen.get_code_string()
+    # codegen.print_code()
 
-    # ir_generator = IRGenerator()  
-    # ir_code = ir_generator.visit(ast_root, None) 
+    with open("output.ts", "w") as f:
+        f.write(code_str)        
+
+    run_tsvm("output.ts", input_values="3\n4\n")
     
-    # print("Generated Intermediate Code (IR):")
-    # print(ir_code)
-
-    # optimizer = IROptimizer()  # Create an optimizer
-    # optimized_ir_code = optimizer.optimize(ir_code)  # Perform optimization
-    # print("Optimized Intermediate Code (IR):")
-    # print(optimized_ir_code)
-
-    # # Save optimized IR code to a file
-    # with open("output.ts", "w") as file:
-    #     file.write(optimized_ir_code)
-
-    # # Run tsvm on the generated IR file
-    # run_tsvm("output.ts")
-
+    
 
 if __name__ == "__main__":
     main()
