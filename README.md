@@ -41,9 +41,13 @@ python main.py
 Lexer/ → token definitions
 
 Parser/ → grammar + AST builder
+
 SemanticAnalyzer/ → semantic checks
+
 CodeGenerator/ → IR code generation
+
 output.ts → final intermediate code
+
 tsvm.c → virtual machine to run output
 
 ## 👨‍💻 Authors & Thanks
