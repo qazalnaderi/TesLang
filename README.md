@@ -29,14 +29,15 @@ The final output runs on the [tsvm virtual machine](https://github.com/aligrudi/
 ## ▶️ How to Run
 
 1. Compile [`tsvm.c`](https://github.com/aligrudi/tsvm) (use GCC or Dev-C++)
-2. Generate TesLang code (e.g., `main.tes`)
-3. Run Python compiler to produce `output.ts`
-4. Run on tsvm:
-
+2. Make sure the following are ready:
+- `tsvm.exe` is compiled and placed in the root directory
+- Your TesLang source file (e.g., `test_input2.tes`) is in `./tests/`
+Then simply run:
 ```bash
 python main.py
 ```
-#📂 Project Structure
+
+## 📂 Project Structure
 Lexer/ → token definitions
 
 Parser/ → grammar + AST builder
@@ -49,7 +50,7 @@ output.ts → final intermediate code
 
 tsvm.c → virtual machine to run output
 
-#👨‍💻 Authors & Thanks
+## 👨‍💻 Authors & Thanks
 Developed by me, with massive help from:
 
 🤖 ChatGPT — for logic checks, refactors, and moral support
