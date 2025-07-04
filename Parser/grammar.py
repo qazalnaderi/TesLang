@@ -100,6 +100,10 @@ class Grammar:
         return p[0]
 
     # stmt :=
+    def p_stmt_func(self, p):
+        '''stmt : funk'''
+        p[0] = p[1]
+
     def p_stmt_expr(self, p):
         '''stmt : expr SEMI_COLON'''
         p[0] = ExpressionStatementNode(expr=p[1], lineno=self.lexer.lineno)
@@ -160,17 +164,17 @@ class Grammar:
         raise SyntaxError("Missing semicolon")
 
     def p_stmt_if(self, p):
-        '''stmt : IF LDBLBR expr RDBLBR stmt %prec IFX'''
-        p[0] = IfStatementNode(expr=p[3], stmt=p[5],else_choice=None, lineno=self.lexer.lineno)
+        '''stmt : IF LDBLBR expr RDBLBR BEGIN body END %prec IFX'''
+        p[0] = IfStatementNode(expr=p[3], stmt=p[6], else_choice=None, lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_if_else(self, p):
-        '''stmt : IF LDBLBR expr RDBLBR stmt ELSE stmt'''
-        p[0] = IfStatementNode(expr=p[3], stmt=p[5], else_choice=p[7], lineno=self.lexer.lineno)
+        '''stmt : IF LDBLBR expr RDBLBR BEGIN body END ELSE stmt'''
+        p[0] = IfStatementNode(expr=p[3], stmt=p[6], else_choice=p[9], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_while(self, p):
-        '''stmt : WHILE LDBLBR expr RDBLBR stmt'''
+        '''stmt : WHILE LDBLBR expr RDBLBR BEGIN body END'''
         p[0] = WhileStatementNode(expr=p[3], stmt=p[5], lineno=self.lexer.lineno)
         return p[0]
 
@@ -180,7 +184,7 @@ class Grammar:
         return p[0]
 
     def p_stmt_for(self, p):
-        '''stmt : FOR LPAREN ID EQUAL expr TO expr RPAREN stmt'''
+        '''stmt : FOR LPAREN ID EQUAL expr TO expr RPAREN BEGIN body END'''
         p[0] = ForStatementNode(iden=p[3], expr1=p[5], expr2=p[7], stmt=p[9], lineno=self.lexer.lineno)
         return p[0]
 

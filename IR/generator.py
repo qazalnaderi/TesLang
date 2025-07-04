@@ -65,47 +65,46 @@ class CodeGenerator(Visitor):
         """Visit function definition node"""
         func_name = node.iden
         self.current_function = func_name
-        
-        # Reset register counter for each function
-        self.register_counter = 1  # r0 is reserved for return value
+
+        self.register_counter = 1  # r0 reserved for return
         self.local_vars = {}
-        
+
         # Extract parameters
         params = []
         param_regs = {}
         current_param = node.flist
-        reg_num = 1  # Start from r1 for parameters
-        
+        reg_num = 1
+
         while current_param:
             param_name = current_param.iden
             param_regs[param_name] = f"r{reg_num}"
             params.append((param_name, f"r{reg_num}"))
             reg_num += 1
             current_param = getattr(current_param, 'next_param', None)
-        
+
         self.function_params[func_name] = param_regs
-        
-        # Generate function header
+
+        # Start the function
         param_comment = ", ".join([f"{name} => {reg}" for name, reg in params])
         if param_comment:
             param_comment += " & "
         self.emit(f"proc {func_name} # {param_comment}return value => r0")
-        
-        # Update register counter to account for parameters
+
+        # Update register counter
         self.register_counter = reg_num
-        
-        # Visit function body
+
+        # Visit the function body directly - this should handle everything correctly
         if node.func_choice:
             self.visit(node.func_choice)
-        
-        # Ensure function ends with ret
-        if not self.code or not any(self.code[-2:]):
+
+        # Ensure function ends with return
+        if not any(instr.startswith("ret") for instr in self.code[-3:]):
             self.emit("mov r0, 0")
             self.emit("ret")
 
-        
         self.current_function = None
-        return None
+
+
     
     def visit_FunctionWithReturnNode(self, node):
         """Visit function with return expression"""
@@ -118,22 +117,44 @@ class CodeGenerator(Visitor):
     
     def visit_BodyNode(self, node):
         """Visit body node"""
+        
         if hasattr(node, 'body') and node.body:
             if isinstance(node.body, list):
-                for stmt in node.body:
+                for i, stmt in enumerate(node.body):
                     if stmt:
+                        # Remove the redundant check - just visit everything
                         self.visit(stmt)
             else:
                 self.visit(node.body)
         return None
-    
     def visit_FunctionBodyNode(self, node):
-        """Visit function body node"""
+        """Visit function body node (may contain nested function definitions)"""
+        
+        # First, visit the main statement (e.g., return, assignment, or nested function)
         if node.stmt:
-            self.visit(node.stmt)
+            if isinstance(node.stmt, (FunctionNode, FunctionWithReturnNode)):
+                self.visit(node.stmt)
+            else:
+                self.visit(node.stmt)
+        
+        # Then, visit the rest of the body which can include more statements or nested functions
         if node.body:
-            self.visit(node.body)
+            if isinstance(node.body, list):
+                for stmt in node.body:
+                    if stmt:
+                        if isinstance(stmt, (FunctionNode, FunctionWithReturnNode)):
+                            self.visit(stmt)
+                        else:
+                            self.visit(stmt)
+            else:
+                # Just one more statement
+                if isinstance(node.body, (FunctionNode, FunctionWithReturnNode)):
+                    self.visit(node.body)
+                else:
+                    self.visit(node.body)
+        
         return None
+
     
 
     def visit_ParenthesisNode(self, node):
@@ -392,7 +413,11 @@ class CodeGenerator(Visitor):
         if node.operator == '==':
             self.emit(f"cmp== {result_reg}, {left_reg}, {right_reg}")
         elif node.operator == '!=':
-            self.emit(f"cmp!= {result_reg}, {left_reg}, {right_reg}")
+            temp_reg = self.new_register()
+            self.emit(f"cmp== {temp_reg}, {left_reg}, {right_reg}")
+            zero_reg = self.new_register()
+            self.emit(f"mov {zero_reg}, 0")
+            self.emit(f"cmp== {result_reg}, {temp_reg}, {zero_reg}")
         elif node.operator == '<':
             self.emit(f"cmp< {result_reg}, {left_reg}, {right_reg}")   
         elif node.operator == '>':
@@ -533,6 +558,54 @@ class CodeGenerator(Visitor):
         if expr_reg:
             self.emit(f"call iput, {expr_reg}")
         return None
+    
+
+
+    def visit_non_function_statements(self, node):
+        if node is None:
+            return
+
+        if isinstance(node, (FunctionNode, FunctionWithReturnNode)):
+            return  # نادیده بگیر
+
+        if hasattr(node, 'stmt'):
+            self.visit_non_function_statements(node.stmt)
+
+        if hasattr(node, 'body'):
+            body = node.body
+            if isinstance(body, list):
+                for stmt in body:
+                    self.visit_non_function_statements(stmt)
+            else:
+                self.visit_non_function_statements(body)
+        else:
+            self.visit(node)
+
+
+
+    def collect_nested_functions(self, node):
+        nested = []
+        if node is None:
+            return nested
+
+        # بررسی مستقیم
+        if isinstance(node, (FunctionNode, FunctionWithReturnNode)):
+            nested.append(node)
+            return nested
+
+        # اگر BodyNode یا FunctionBodyNode بود
+        if hasattr(node, 'stmt'):
+            nested += self.collect_nested_functions(node.stmt)
+        if hasattr(node, 'body'):
+            body = node.body
+            if isinstance(body, list):
+                for stmt in body:
+                    nested += self.collect_nested_functions(stmt)
+            else:
+                nested += self.collect_nested_functions(body)
+
+        return nested
+
     
     def generate_code(self, ast_root):
         """Main code generation method"""
