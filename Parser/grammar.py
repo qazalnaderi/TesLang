@@ -3,6 +3,7 @@ from Lexer.tokens import tokens
 from .ast import *
 from Lexer.tokens import lexer
 
+
 class Grammar:
     tokens = tokens
 
@@ -22,13 +23,9 @@ class Grammar:
 
     def __init__(self):
         self.lexer = lexer
-        self.paren_count = 0
-        self.brace_count = 0
         self.current_function = None 
         self.has_syntax_error = False
         
-
-
 
     # prog :=
     def p_prog(self, p):
@@ -54,7 +51,7 @@ class Grammar:
     # func :=
     def p_func_with_body(self, p):
         '''funk : FUNK ID LPAREN flist RPAREN LESS_THAN type GREATER_THAN LBRACE body RBRACE'''
-        self.brace_count += 1
+        # self.brace_count += 1
         self.current_function = p[2]
         param_list = []
         current = p[4]
@@ -63,7 +60,7 @@ class Grammar:
             current = current.next_param if hasattr(current, 'next_param') else None
         p[0] = FunctionNode(type=p[7], iden=p[2], flist=p[4], func_choice=p[10], lineno=self.lexer.lineno)
         self.current_function = None
-        self.brace_count -= 1
+        # self.brace_count -= 1
 
     def p_func_without_body(self, p):
         '''funk : FUNK ID LPAREN flist RPAREN LESS_THAN type GREATER_THAN RETURN_ARROW expr SEMI_COLON'''
@@ -80,8 +77,8 @@ class Grammar:
 
     def p_func_error(self, p):
         '''funk : error'''
-        if self.brace_count > 0:
-            print(f"Error: Unmatched curly brace(s) at line {self.lexer.lineno}.")
+        # if self.brace_count > 0:
+        #     print(f"Error: Unmatched curly brace(s) at line {self.lexer.lineno}.")
         return None
 
     # body :=
@@ -107,12 +104,26 @@ class Grammar:
         '''stmt : expr SEMI_COLON'''
         p[0] = ExpressionStatementNode(expr=p[1], lineno=self.lexer.lineno)
         return p[0]
+    
+
+    def p_stmt_expr_missing_semi(self, p):
+        '''stmt : expr'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Missing ';' after expression at line {self.lexer.lineno}")
+        self.has_syntax_error = True
+        raise SyntaxError("Missing semicolon")
 
     def p_stmt_assign(self, p):
         '''stmt : expr EQUAL expr SEMI_COLON'''
         p[0] = AssignmentNode(left=p[1], right=p[3], lineno=self.lexer.lineno)
         return p[0]
     
+    def p_stmt_assign_missing_semi(self, p):
+        '''stmt : expr EQUAL expr'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Missing ';' after assignment at line {self.lexer.lineno}")
+        self.has_syntax_error = True
+        raise SyntaxError("Missing semicolon")
 
     def p_stmt_defvar(self, p):
         '''stmt : defvar SEMI_COLON'''
@@ -129,38 +140,43 @@ class Grammar:
             p[0] = VariableDefinitionNode(iden=p[1], type=p[3], defvar_choice=p[5], lineno=self.lexer.lineno)
         return p[0]
 
-
+    def p_stmt_defvar_missing_semi(self, p):
+        '''stmt : defvar'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Missing ';' after variable declaration at line {self.lexer.lineno}")
+        self.has_syntax_error = True
+        raise SyntaxError("Missing semicolon")
+    
     def p_stmt_print(self, p):
         '''stmt : PRINT expr SEMI_COLON'''
         p[0] = PrintStatementNode(expr=p[2], lineno=self.lexer.lineno)
         return p[0]
+    
+    def p_stmt_print_missing_semi(self, p):
+        '''stmt : PRINT expr'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Missing ';' after print at line {self.lexer.lineno}")
+        self.has_syntax_error = True
+        raise SyntaxError("Missing semicolon")
 
     def p_stmt_if(self, p):
         '''stmt : IF LDBLBR expr RDBLBR stmt %prec IFX'''
-        self.paren_count += 1
         p[0] = IfStatementNode(expr=p[3], stmt=p[5],else_choice=None, lineno=self.lexer.lineno)
-        self.paren_count -= 1
         return p[0]
 
     def p_stmt_if_else(self, p):
-        '''stmt : IF LPAREN expr RPAREN stmt ELSE stmt'''
-        self.paren_count += 1
-        p[0] = IfStatementNode(expr=p[3], stmt=p[5], else_stmt=p[7], lineno=self.lexer.lineno)
-        self.paren_count -= 1
+        '''stmt : IF LDBLBR expr RDBLBR stmt ELSE stmt'''
+        p[0] = IfStatementNode(expr=p[3], stmt=p[5], else_choice=p[7], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_while(self, p):
-        '''stmt : WHILE LPAREN expr RPAREN stmt'''
-        self.paren_count += 1
-        p[0] = WhileStatementNode(condition=p[3], stmt=p[5], lineno=self.lexer.lineno)
-        self.paren_count -= 1
+        '''stmt : WHILE LDBLBR expr RDBLBR stmt'''
+        p[0] = WhileStatementNode(expr=p[3], stmt=p[5], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_do_while(self, p):
-        '''stmt : DO stmt WHILE LPAREN expr RPAREN SEMI_COLON'''
-        self.paren_count += 1
+        '''stmt : DO stmt WHILE LDBLBR expr RDBLBR '''
         p[0] = DoWhileStatementNode(stmt=p[2], condition=p[5], lineno=self.lexer.lineno)
-        self.paren_count -= 1
         return p[0]
 
     def p_stmt_for(self, p):
@@ -181,6 +197,13 @@ class Grammar:
         else:
             p[0] = ReturnStatementNode(expr=None, lineno=self.lexer.lineno)
 
+    def p_stmt_return_missing_semi(self, p):
+        '''stmt : RETURN expr
+                | RETURN'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Missing ';' after return at line {self.lexer.lineno}")
+        self.has_syntax_error = True
+        raise SyntaxError("Missing semicolon")
 
     # flist :=
     def p_flist(self, p):
@@ -275,11 +298,11 @@ class Grammar:
         p[0].type = 'INT'  # Assuming the result is an integer
         return p[0]
     
-    def p_expr_logical_and(p):
+    def p_expr_logical_and(self, p):
         "expr : expr AND expr"
         p[0] = BinaryOperationNode(p[1], '&&', p[3])
 
-    def p_expr_logical_or(p):
+    def p_expr_logical_or(self, p):
         "expr : expr OR expr"
         p[0] = BinaryOperationNode(p[1], '||', p[3])
 
@@ -338,25 +361,134 @@ class Grammar:
 
     def p_expr_parens(self, p):
         '''expr : LPAREN expr RPAREN'''
-        self.paren_count += 1
+        
         p[0] = ParenthesisNode(expr=p[2], lineno=self.lexer.lineno)
-        self.paren_count -= 1
         return p[0]
     
 
     def p_error(self, p):
         self.has_syntax_error = True
-        print("❌ Syntax Errors:")
-        if self.paren_count > 0:
-            print(f"Error: Unmatched opening parentheses at line {self.lexer.lineno}.")
-        if self.brace_count > 0:
-            print(f"Error: Unmatched curly braces at line {self.lexer.lineno}.")
+        print("❌ Compilation failed due to syntax error.")
+        
         if p:
-            if p.type in tokens:
-                print(f"Maybe you forgot to put ; before '{p.value}' at line {self.lexer.lineno}")
-            else:    
-                print(f"Syntax error at token: '{p.value}' at line {self.lexer.lineno}")
-        else:
-            print(f"Syntax error at EOF")
-
+            # Get the current token value and line number
+            error_token = p.value
+            line_num = p.lineno
             
+            # Look at recent tokens to understand context
+            context = ""
+            if hasattr(self, 'recent_tokens') and self.recent_tokens:
+                recent_values = [str(tok.value) for tok in self.recent_tokens[-3:]]
+                context = f" (after: {' '.join(recent_values)})"
+            
+            # Only try typo detection for string tokens (identifiers)
+            if isinstance(error_token, str) and p.type == 'ID':
+                suggestion = self._find_typo_suggestion(error_token)
+                
+                if suggestion:
+                    print(f"❌ Syntax error: Unknown identifier '{error_token}' at line {line_num}{context}")
+                    print(f"   Did you mean '{suggestion}'?")
+                else:
+                    # Check if it looks like a statement that should start with a keyword
+                    if self._looks_like_statement_start():
+                        print(f"❌ Syntax error: Unexpected identifier '{error_token}' at line {line_num}")
+                        print(f"   This looks like it should be a statement. Did you mean a keyword?")
+                    else:
+                        print(f"❌ Syntax error: Unexpected identifier '{error_token}' at line {line_num}{context}")
+            else:
+                # Handle non-string tokens (numbers, symbols, etc.)
+                print(f"❌ Syntax error: Unexpected token '{error_token}' at line {line_num}{context}")
+                # print(f"   Token type: {p.type}")
+        else:
+            print("❌ Syntax error: Unexpected end of file")
+
+    def _find_typo_suggestion(self, word):
+        """Find the best typo suggestion using multiple algorithms"""
+        # Only process string tokens
+        if not isinstance(word, str):
+            return None
+            
+        # Define your language's keywords and common identifiers
+        valid_keywords = [
+            'return', 'print', 'if', 'else', 'while', 'for', 'do', 'begin', 'end',
+            'funk', 'int', 'bool', 'str', 'mstr', 'vector', 'null', 'true', 'false',
+            'and', 'or', 'not', 'to', 'as'
+        ]
+        
+        best_match = None
+        best_score = float('inf')
+        
+        for keyword in valid_keywords:
+            # Calculate multiple similarity metrics
+            edit_distance = self._levenshtein_distance(word.lower(), keyword.lower())
+            length_penalty = abs(len(word) - len(keyword)) * 0.5
+            
+            # Special bonus for common patterns
+            pattern_bonus = 0
+            if self._has_common_typo_pattern(word, keyword):
+                pattern_bonus = -1
+            
+            score = edit_distance + length_penalty + pattern_bonus
+            
+            # Only suggest if it's reasonably close
+            if score < best_score and score <= max(2, len(keyword) * 0.4):
+                best_score = score
+                best_match = keyword
+        
+        return best_match
+    
+    def _levenshtein_distance(self, s1, s2):
+        """Calculate edit distance between two strings"""
+        if len(s1) < len(s2):
+            return self._levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    def _has_common_typo_pattern(self, typo, correct):
+        """Check for common typo patterns to give bonus points"""
+        # Missing letters
+        if len(typo) == len(correct) - 1:
+            # Check if typo is correct with one letter removed
+            for i in range(len(correct)):
+                if correct[:i] + correct[i+1:] == typo:
+                    return True
+        
+        # Extra letters
+        if len(typo) == len(correct) + 1:
+            # Check if correct is typo with one letter removed
+            for i in range(len(typo)):
+                if typo[:i] + typo[i+1:] == correct:
+                    return True
+        
+        # Adjacent character swaps
+        if len(typo) == len(correct):
+            for i in range(len(typo) - 1):
+                if (typo[i] == correct[i+1] and 
+                    typo[i+1] == correct[i] and 
+                    typo[:i] == correct[:i] and 
+                    typo[i+2:] == correct[i+2:]):
+                    return True
+        
+        return False
+
+    def _looks_like_statement_start(self):
+        """Check if we're at the beginning of where a statement should be"""
+        # This is a heuristic - you can improve it based on your grammar
+        if hasattr(self, 'recent_tokens') and self.recent_tokens:
+            last_token = self.recent_tokens[-1]
+            # If we just saw a semicolon, opening brace, or are at start of function body
+            return last_token.type in ['SEMI_COLON', 'LBRACE', 'RBRACE']
+        return True
