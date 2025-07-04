@@ -346,6 +346,33 @@ class CodeGenerator(Visitor):
             self.emit(f"div {result_reg}, {left_reg}, {right_reg}")
         elif node.operator == '%':
             self.emit(f"mod {result_reg}, {left_reg}, {right_reg}")
+
+
+        elif node.operator == '&&':
+            false_label = self.new_label("and_false")
+            end_label = self.new_label("and_end")
+            
+            self.emit(f"jz {left_reg}, {false_label}")  # if left is 0 => jump
+            self.emit(f"jz {right_reg}, {false_label}") # if right is 0 => jump
+            self.emit(f"mov {result_reg}, 1")
+            self.emit(f"jmp {end_label}")
+            self.emit(f"{false_label}:")
+            self.emit(f"mov {result_reg}, 0")
+            self.emit(f"{end_label}:")
+
+        elif node.operator == '||':
+            true_label = self.new_label("or_true")
+            end_label = self.new_label("or_end")
+
+            self.emit(f"jnz {left_reg}, {true_label}")  # if left != 0 => jump
+            self.emit(f"jnz {right_reg}, {true_label}") # if right != 0 => jump
+            self.emit(f"mov {result_reg}, 0")
+            self.emit(f"jmp {end_label}")
+            self.emit(f"{true_label}:")
+            self.emit(f"mov {result_reg}, 1")
+            self.emit(f"{end_label}:")
+   
+
         else:
             # For other operations, just move left operand
             self.emit(f"mov {result_reg}, {left_reg}")

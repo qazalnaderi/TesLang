@@ -482,6 +482,11 @@ class SemanticAnalyzer(Visitor):
         """Visit binary operation"""
         left_type = self.visit(node.expr1)
         right_type = self.visit(node.expr2)
+
+        if node.operator in ['&&', '||']:
+            if left_type != 'bool' or right_type != 'bool':
+                self.add_error(f"Logical operator '{node.operator}' requires boolean operands", node)
+            return 'bool'
         
         # Return appropriate type based on operation
         if hasattr(node, 'operator'):

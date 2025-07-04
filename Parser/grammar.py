@@ -274,6 +274,15 @@ class Grammar:
         p[0] = UnaryOperationNode(operator='-', expr=p[2], lineno=self.lexer.lineno)
         p[0].type = 'INT'  # Assuming the result is an integer
         return p[0]
+    
+    def p_expr_logical_and(p):
+        "expr : expr AND expr"
+        p[0] = BinaryOperationNode(p[1], '&&', p[3])
+
+    def p_expr_logical_or(p):
+        "expr : expr OR expr"
+        p[0] = BinaryOperationNode(p[1], '||', p[3])
+
 
     def p_expr_list(self, p):
         '''expr : ID LPAREN expr RPAREN'''
