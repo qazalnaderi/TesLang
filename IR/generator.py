@@ -214,13 +214,13 @@ class CodeGenerator(Visitor):
                     self.emit(f"call iput, {arg_reg}")
             return None
         
-        elif func_name == "length":
-            if node.clist:
-                arg_reg = self.visit(node.clist)
-                result_reg = self.new_register()
-                if arg_reg:
-                    self.emit(f"len {result_reg}, {arg_reg}")
-                return result_reg
+        # elif func_name == "length":
+        #     if node.clist:
+        #         arg_reg = self.visit(node.clist)
+        #         result_reg = self.new_register()
+        #         if arg_reg:
+        #             self.emit(f"len {result_reg}, {arg_reg}")
+        #         return result_reg
         
         elif func_name == "list":
             if node.clist:
@@ -390,17 +390,17 @@ class CodeGenerator(Visitor):
         result_reg = self.new_register()
         
         if node.operator == '==':
-            self.emit(f"eq {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp== {result_reg}, {left_reg}, {right_reg}")
         elif node.operator == '!=':
-            self.emit(f"ne {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp!= {result_reg}, {left_reg}, {right_reg}")
         elif node.operator == '<':
-            self.emit(f"lt {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp< {result_reg}, {left_reg}, {right_reg}")   
         elif node.operator == '>':
-            self.emit(f"gt {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp> {result_reg}, {left_reg}, {right_reg}")   
         elif node.operator == '<=':
-            self.emit(f"le {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp<= {result_reg}, {left_reg}, {right_reg}")
         elif node.operator == '>=':
-            self.emit(f"ge {result_reg}, {left_reg}, {right_reg}")
+            self.emit(f"cmp>= {result_reg}, {left_reg}, {right_reg}")
         
         return result_reg
     
@@ -414,9 +414,15 @@ class CodeGenerator(Visitor):
         result_reg = self.new_register()
         
         if node.operator == '-':
-            self.emit(f"neg {result_reg}, {expr_reg}")
+            zero = self.new_register()
+            self.emit(f"mov {zero}, 0")
+            self.emit(f"sub {result_reg}, {zero}, {expr_reg}")
+
         elif node.operator == '!':
-            self.emit(f"not {result_reg}, {expr_reg}")
+            zero = self.new_register()
+            self.emit(f"mov {zero}, 0")
+            self.emit(f"cmp== {result_reg}, {expr_reg}, {zero}")
+
         else:
             self.emit(f"mov {result_reg}, {expr_reg}")
         
@@ -500,7 +506,7 @@ class CodeGenerator(Visitor):
         # Check condition (loop_var < end_value)
         if end_reg:
             condition_reg = self.new_register()
-            self.emit(f"lt {condition_reg}, {loop_var_reg}, {end_reg}")
+            self.emit(f"cmp< {condition_reg}, {loop_var_reg}, {end_reg}")
             self.emit(f"jz {condition_reg}, {end_label}")
         
         # Generate body
