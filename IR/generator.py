@@ -117,16 +117,17 @@ class CodeGenerator(Visitor):
     
     def visit_BodyNode(self, node):
         """Visit body node"""
-        
         if hasattr(node, 'body') and node.body:
             if isinstance(node.body, list):
                 for i, stmt in enumerate(node.body):
                     if stmt:
-                        # Remove the redundant check - just visit everything
                         self.visit(stmt)
             else:
                 self.visit(node.body)
+
         return None
+    
+    
     def visit_FunctionBodyNode(self, node):
         """Visit function body node (may contain nested function definitions)"""
         
@@ -293,9 +294,14 @@ class CodeGenerator(Visitor):
     
     def visit_ClistNode(self, node):
         """Visit call list node"""
-        if hasattr(node, 'expr') and node.expr:
-            return self.visit(node.expr)
+        if node.expr:
+            if isinstance(node.expr, list):
+                result_regs = [self.visit(e) for e in node.expr]
+                return result_regs[0] if result_regs else None
+            else:
+                return self.visit(node.expr)
         return None
+    
     
     def visit_ArrayIndexingNode(self, node):
         """Visit array indexing"""
@@ -453,6 +459,29 @@ class CodeGenerator(Visitor):
         
         return result_reg
     
+    def visit_TernaryOperationNode(self, node):
+        cond_reg = self.visit(node.condition)
+        true_label = self.new_label("tern_true")
+        false_label = self.new_label("tern_false")
+        end_label = self.new_label("tern_end")
+        result_reg = self.new_register()
+
+        self.emit(f"jnz {cond_reg}, {true_label}")
+        self.emit(f"jmp {false_label}")
+        
+        self.emit(f"{true_label}:")
+        true_reg = self.visit(node.true_expr)
+        self.emit(f"mov {result_reg}, {true_reg}")
+        self.emit(f"jmp {end_label}")
+        
+        self.emit(f"{false_label}:")
+        false_reg = self.visit(node.false_expr)
+        self.emit(f"mov {result_reg}, {false_reg}")
+        
+        self.emit(f"{end_label}:")
+        return result_reg
+
+    
     def visit_IfStatementNode(self, node):
         """Visit if statement"""
         condition_reg = self.visit(node.expr)
@@ -508,11 +537,39 @@ class CodeGenerator(Visitor):
         
         return None
     
+
+    def visit_DoWhileStatementNode(self, node):
+        start_label = self.new_label("dowhile")
+        end_label   = self.new_label("enddowhile")
+
+        # emit start label
+        self.emit(f"{start_label}:")
+
+        # generate body once
+        self.visit(node.stmt)
+
+        # evaluate condition
+        cond_reg = self.visit(node.condition)
+        # if true, jump back to start
+        self.emit(f"jnz {cond_reg}, {start_label}")
+
+        # end label (optional)
+        self.emit(f"{end_label}:")
+        return None
+
+    
     def visit_ForStatementNode(self, node):
         """Visit for statement"""
+        
         loop_var = node.iden
-        loop_var_reg = self.new_register()
-        self.local_vars[loop_var] = loop_var_reg
+        
+        # Check if loop variable already exists (from variable definition)
+        if loop_var in self.local_vars:
+            loop_var_reg = self.local_vars[loop_var]
+        else:
+            # Create new register for loop variable
+            loop_var_reg = self.new_register()
+            self.local_vars[loop_var] = loop_var_reg
         
         # Initialize loop variable
         start_reg = self.visit(node.expr1)
@@ -534,18 +591,21 @@ class CodeGenerator(Visitor):
             self.emit(f"cmp< {condition_reg}, {loop_var_reg}, {end_reg}")
             self.emit(f"jz {condition_reg}, {end_label}")
         
-        # Generate body
-        self.visit(node.stmt)
+        # Generate body - THIS IS THE MISSING PART!
+        if node.stmt:
+            self.visit(node.stmt)
         
         # Increment loop variable
-        self.emit(f"add {loop_var_reg}, {loop_var_reg}, 1")
+        one_reg = self.new_register()
+        self.emit(f"mov {one_reg}, 1")
+        self.emit(f"add {loop_var_reg}, {loop_var_reg}, {one_reg}")
         
         # Jump back to loop
         self.emit(f"jmp {loop_label}")
         
         # End label
         self.emit(f"{end_label}:")
-        
+    
         return None
     
     def visit_ExpressionStatementNode(self, node):
@@ -605,6 +665,62 @@ class CodeGenerator(Visitor):
                 nested += self.collect_nested_functions(body)
 
         return nested
+    
+
+    def visit_AssignmentNode(self, node):
+        """Handle assignment statements (var = expr or array[index] = expr)"""
+        if isinstance(node.left, ArrayIndexingNode):
+            # Assignment to array element: a[i] = expr
+            array_name = node.left.array_expr.iden_value
+            index_reg = self.visit(node.left.index_expr)
+            value_reg = self.visit(node.right)
+
+            # Register for base array pointer
+            array_reg = self.local_vars.get(array_name)
+            if not array_reg:
+                array_reg = self.new_register()
+                self.local_vars[array_name] = array_reg
+
+            # Calculate address: base + index * 4
+            offset_reg = self.new_register()
+            scale_reg = self.new_register()
+            self.emit(f"mov {scale_reg}, 4")
+            self.emit(f"mul {offset_reg}, {index_reg}, {scale_reg}")
+            self.emit(f"add {offset_reg}, {array_reg}, {offset_reg}")
+            self.emit(f"st {value_reg}, {offset_reg}")
+        else:
+            # Normal variable assignment
+            var_name = node.left.iden_value
+            value_reg = self.visit(node.right)
+            if var_name in self.local_vars:
+                target_reg = self.local_vars[var_name]
+            else:
+                target_reg = self.new_register()
+                self.local_vars[var_name] = target_reg
+            self.emit(f"mov {target_reg}, {value_reg}")
+ 
+
+    def visit_ArrayIndexingNode(self, node):
+        """Access array element: a[i]"""
+        array_name = node.array_expr.iden_value
+        index_reg = self.visit(node.index_expr)
+
+        array_reg = self.local_vars.get(array_name)
+        if not array_reg:
+            array_reg = self.new_register()
+            self.local_vars[array_name] = array_reg
+
+        # Calculate effective address
+        offset_reg = self.new_register()
+        scale_reg = self.new_register()
+        result_reg = self.new_register()
+
+        self.emit(f"mov {scale_reg}, 4")
+        self.emit(f"mul {offset_reg}, {index_reg}, {scale_reg}")
+        self.emit(f"add {offset_reg}, {array_reg}, {offset_reg}")
+        self.emit(f"ld {result_reg}, {offset_reg}")
+        return result_reg
+
 
     
     def generate_code(self, ast_root):

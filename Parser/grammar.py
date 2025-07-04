@@ -110,24 +110,24 @@ class Grammar:
         return p[0]
     
 
-    def p_stmt_expr_missing_semi(self, p):
-        '''stmt : expr'''
-        print("❌ Compilation failed due to syntax error.")
-        print(f"❌ Syntax error: Missing ';' after expression at line {self.lexer.lineno}")
-        self.has_syntax_error = True
-        raise SyntaxError("Missing semicolon")
+    # def p_stmt_expr_missing_semi(self, p):
+    #     '''stmt : expr'''
+    #     print("❌ Compilation failed due to syntax error.")
+    #     print(f"❌ Syntax error: Missing ';' after expression at line {self.lexer.lineno}")
+    #     self.has_syntax_error = True
+    #     raise SyntaxError("Missing semicolon")
 
     def p_stmt_assign(self, p):
         '''stmt : expr EQUAL expr SEMI_COLON'''
         p[0] = AssignmentNode(left=p[1], right=p[3], lineno=self.lexer.lineno)
         return p[0]
     
-    def p_stmt_assign_missing_semi(self, p):
-        '''stmt : expr EQUAL expr'''
-        print("❌ Compilation failed due to syntax error.")
-        print(f"❌ Syntax error: Missing ';' after assignment at line {self.lexer.lineno}")
-        self.has_syntax_error = True
-        raise SyntaxError("Missing semicolon")
+    # def p_stmt_assign_missing_semi(self, p):
+    #     '''stmt : expr EQUAL expr'''
+    #     print("❌ Compilation failed due to syntax error.")
+    #     print(f"❌ Syntax error: Missing ';' after assignment at line {self.lexer.lineno}")
+    #     self.has_syntax_error = True
+    #     raise SyntaxError("Missing semicolon")
 
     def p_stmt_defvar(self, p):
         '''stmt : defvar SEMI_COLON'''
@@ -144,24 +144,24 @@ class Grammar:
             p[0] = VariableDefinitionNode(iden=p[1], type=p[3], defvar_choice=p[5], lineno=self.lexer.lineno)
         return p[0]
 
-    def p_stmt_defvar_missing_semi(self, p):
-        '''stmt : defvar'''
-        print("❌ Compilation failed due to syntax error.")
-        print(f"❌ Syntax error: Missing ';' after variable declaration at line {self.lexer.lineno}")
-        self.has_syntax_error = True
-        raise SyntaxError("Missing semicolon")
+    # def p_stmt_defvar_missing_semi(self, p):
+    #     '''stmt : defvar'''
+    #     print("❌ Compilation failed due to syntax error.")
+    #     print(f"❌ Syntax error: Missing ';' after variable declaration at line {self.lexer.lineno}")
+    #     self.has_syntax_error = True
+    #     raise SyntaxError("Missing semicolon")
     
     def p_stmt_print(self, p):
         '''stmt : PRINT expr SEMI_COLON'''
         p[0] = PrintStatementNode(expr=p[2], lineno=self.lexer.lineno)
         return p[0]
     
-    def p_stmt_print_missing_semi(self, p):
-        '''stmt : PRINT expr'''
-        print("❌ Compilation failed due to syntax error.")
-        print(f"❌ Syntax error: Missing ';' after print at line {self.lexer.lineno}")
-        self.has_syntax_error = True
-        raise SyntaxError("Missing semicolon")
+    # def p_stmt_print_missing_semi(self, p):
+    #     '''stmt : PRINT expr'''
+    #     print("❌ Compilation failed due to syntax error.")
+    #     print(f"❌ Syntax error: Missing ';' after print at line {self.lexer.lineno}")
+    #     self.has_syntax_error = True
+    #     raise SyntaxError("Missing semicolon")
 
     def p_stmt_if(self, p):
         '''stmt : IF LDBLBR expr RDBLBR BEGIN body END %prec IFX'''
@@ -175,17 +175,17 @@ class Grammar:
 
     def p_stmt_while(self, p):
         '''stmt : WHILE LDBLBR expr RDBLBR BEGIN body END'''
-        p[0] = WhileStatementNode(expr=p[3], stmt=p[5], lineno=self.lexer.lineno)
+        p[0] = WhileStatementNode(expr=p[3], stmt=p[6], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_do_while(self, p):
-        '''stmt : DO stmt WHILE LDBLBR expr RDBLBR '''
+        '''stmt : DO stmt WHILE LDBLBR expr RDBLBR SEMI_COLON '''
         p[0] = DoWhileStatementNode(stmt=p[2], condition=p[5], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_for(self, p):
         '''stmt : FOR LPAREN ID EQUAL expr TO expr RPAREN BEGIN body END'''
-        p[0] = ForStatementNode(iden=p[3], expr1=p[5], expr2=p[7], stmt=p[9], lineno=self.lexer.lineno)
+        p[0] = ForStatementNode(iden=p[3], expr1=p[5], expr2=p[7], stmt=p[10], lineno=self.lexer.lineno)
         return p[0]
 
     def p_stmt_begin_end(self, p):
@@ -201,13 +201,13 @@ class Grammar:
         else:
             p[0] = ReturnStatementNode(expr=None, lineno=self.lexer.lineno)
 
-    def p_stmt_return_missing_semi(self, p):
-        '''stmt : RETURN expr
-                | RETURN'''
-        print("❌ Compilation failed due to syntax error.")
-        print(f"❌ Syntax error: Missing ';' after return at line {self.lexer.lineno}")
-        self.has_syntax_error = True
-        raise SyntaxError("Missing semicolon")
+    # def p_stmt_return_missing_semi(self, p):
+    #     '''stmt : RETURN expr
+    #             | RETURN'''
+    #     print("❌ Compilation failed due to syntax error.")
+    #     print(f"❌ Syntax error: Missing ';' after return at line {self.lexer.lineno}")
+    #     self.has_syntax_error = True
+    #     raise SyntaxError("Missing semicolon")
 
     # flist :=
     def p_flist(self, p):
@@ -268,9 +268,12 @@ class Grammar:
         return p[0]
 
     def p_expr_ternary(self, p):
-        '''expr : expr QMARK expr COLON expr'''
+        '''expr : expr QUESTION expr COLON expr'''
         p[0] = TernaryOperationNode(condition=p[1], true_expr=p[3], false_expr=p[5], lineno=self.lexer.lineno)
-        p[0].type = p[3].type
+        if hasattr(p[3], 'type'):
+            p[0].type = p[3].type
+        else:
+            p[0].type = None
         return p[0]
 
     def p_expr_binary_math(self, p):
@@ -369,7 +372,15 @@ class Grammar:
         p[0] = ParenthesisNode(expr=p[2], lineno=self.lexer.lineno)
         return p[0]
     
+    
+    
+    def p_stmt_error_recovery(self, p):
+        '''stmt : error SEMI_COLON'''
+        print("❌ Compilation failed due to syntax error.")
+        print(f"❌ Syntax error: Invalid statement at line {self.lexer.lineno}")
+        self.has_syntax_error = True
 
+    # And modify p_error to handle the actual token that caused the problem:
     def p_error(self, p):
         self.has_syntax_error = True
         print("❌ Compilation failed due to syntax error.")
@@ -379,36 +390,25 @@ class Grammar:
             error_token = p.value
             line_num = p.lineno
             
-            # Look at recent tokens to understand context
-            context = ""
-            if hasattr(self, 'recent_tokens') and self.recent_tokens:
-                recent_values = [str(tok.value) for tok in self.recent_tokens[-3:]]
-                context = f" (after: {' '.join(recent_values)})"
-            
-            # Only try typo detection for string tokens (identifiers)
-            if isinstance(error_token, str) and p.type == 'ID':
+            # Try typo detection for any identifier token
+            if p.type == 'ID':
                 suggestion = self._find_typo_suggestion(error_token)
                 
                 if suggestion:
-                    print(f"❌ Syntax error: Unknown identifier '{error_token}' at line {line_num}{context}")
+                    print(f"❌ Syntax error: Unknown identifier '{error_token}' at line {line_num}")
                     print(f"   Did you mean '{suggestion}'?")
                 else:
-                    # Check if it looks like a statement that should start with a keyword
-                    if self._looks_like_statement_start():
-                        print(f"❌ Syntax error: Unexpected identifier '{error_token}' at line {line_num}")
-                        print(f"   This looks like it should be a statement. Did you mean a keyword?")
-                    else:
-                        print(f"❌ Syntax error: Unexpected identifier '{error_token}' at line {line_num}{context}")
+                    print(f"❌ Syntax error: Unexpected identifier '{error_token}' at line {line_num}")
             else:
-                # Handle non-string tokens (numbers, symbols, etc.)
-                print(f"❌ Syntax error: Unexpected token '{error_token}' at line {line_num}{context}")
-                # print(f"   Token type: {p.type}")
+                # Handle non-ID tokens
+                print(f"❌ Syntax error: Unexpected token '{error_token}' at line {line_num}")
         else:
             print("❌ Syntax error: Unexpected end of file")
+        raise SyntaxError(f"Parse error at line {p.lineno}")
+    
 
     def _find_typo_suggestion(self, word):
         """Find the best typo suggestion using multiple algorithms"""
-        # Only process string tokens
         if not isinstance(word, str):
             return None
             
@@ -423,24 +423,16 @@ class Grammar:
         best_score = float('inf')
         
         for keyword in valid_keywords:
-            # Calculate multiple similarity metrics
+            # Calculate edit distance
             edit_distance = self._levenshtein_distance(word.lower(), keyword.lower())
-            length_penalty = abs(len(word) - len(keyword)) * 0.5
-            
-            # Special bonus for common patterns
-            pattern_bonus = 0
-            if self._has_common_typo_pattern(word, keyword):
-                pattern_bonus = -1
-            
-            score = edit_distance + length_penalty + pattern_bonus
             
             # Only suggest if it's reasonably close
-            if score < best_score and score <= max(2, len(keyword) * 0.4):
-                best_score = score
+            if edit_distance <= 2 and edit_distance < best_score:
+                best_score = edit_distance
                 best_match = keyword
         
         return best_match
-    
+
     def _levenshtein_distance(self, s1, s2):
         """Calculate edit distance between two strings"""
         if len(s1) < len(s2):
@@ -460,39 +452,4 @@ class Grammar:
             previous_row = current_row
         
         return previous_row[-1]
-    
-    def _has_common_typo_pattern(self, typo, correct):
-        """Check for common typo patterns to give bonus points"""
-        # Missing letters
-        if len(typo) == len(correct) - 1:
-            # Check if typo is correct with one letter removed
-            for i in range(len(correct)):
-                if correct[:i] + correct[i+1:] == typo:
-                    return True
         
-        # Extra letters
-        if len(typo) == len(correct) + 1:
-            # Check if correct is typo with one letter removed
-            for i in range(len(typo)):
-                if typo[:i] + typo[i+1:] == correct:
-                    return True
-        
-        # Adjacent character swaps
-        if len(typo) == len(correct):
-            for i in range(len(typo) - 1):
-                if (typo[i] == correct[i+1] and 
-                    typo[i+1] == correct[i] and 
-                    typo[:i] == correct[:i] and 
-                    typo[i+2:] == correct[i+2:]):
-                    return True
-        
-        return False
-
-    def _looks_like_statement_start(self):
-        """Check if we're at the beginning of where a statement should be"""
-        # This is a heuristic - you can improve it based on your grammar
-        if hasattr(self, 'recent_tokens') and self.recent_tokens:
-            last_token = self.recent_tokens[-1]
-            # If we just saw a semicolon, opening brace, or are at start of function body
-            return last_token.type in ['SEMI_COLON', 'LBRACE', 'RBRACE']
-        return True
