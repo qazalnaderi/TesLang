@@ -1,7 +1,7 @@
 from Parser.parser import Parser
 from Parser.ast import *
 from Parser.grammar import Grammar
-from Lexer.tokens import tokenize
+from Lexer.tokens import tokenize, initialize_counters
 from tabulate import tabulate
 from SemanticAnalyzer.semantic_analyzer import SemanticAnalyzer
 from IR.generator import CodeGenerator
@@ -49,21 +49,27 @@ def main():
 
     tokens_list = tokenize(input_text)
     print_tokens(tokens_list)
-
+    
+    initialize_counters()
     grammar = Grammar()
     parser = Parser(grammar)
 
     ast_root = parser.build(input_text)
-    # print('Parser ast_root:', ast_root)
-    if not grammar.has_syntax_error and ast_root:
+    print('Parser ast_root:', ast_root)
+    if grammar.has_syntax_error:  
+        exit()
+    elif not grammar.has_syntax_error and ast_root:
         print("✅ Parsing successful with no syntax errors.")
 
     analyzer = SemanticAnalyzer()
     analyzer.analyze(ast_root)
+
+
     if not analyzer.has_sem_error:
         print("✅ Semantic Analysis successful with no errors.")
     else:
         analyzer.print_errors()
+        exit()
     
     codegen = CodeGenerator()
 
@@ -74,9 +80,10 @@ def main():
     with open("output.ts", "w") as f:
         f.write(code_str)        
 
-    run_tsvm("output.ts", input_values="3\n4\n")
+    run_tsvm("output.ts", input_values="12\n4\n")
     
-    
+    # run_tsvm("output.ts")
+
 
 if __name__ == "__main__":
     main()
