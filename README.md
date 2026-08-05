@@ -99,7 +99,6 @@ TesLang/
 │   ├── test_input.tes
 │   └── test_input2.tes
 ├── main.py
-├── tsvm.c
 ├── requirements.txt
 └── README.md
 ```
